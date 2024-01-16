@@ -32,8 +32,8 @@ type bearAuthMiddle struct {
 type ctxKey string
 
 const (
-	authValue           = uint8(1 << iota)
-	_BearerAuthTokenKey = "Authorization"
+	authValue          = uint8(1 << iota)
+	BearerAuthTokenKey = "Authorization"
 
 	_KEY_USER_INFO     = "api_toolkit_user_info"
 	_CTX_KEY_USER_INFO = ctxKey(_KEY_USER_INFO)
@@ -111,7 +111,7 @@ func (m *bearAuthMiddle) Handler() gin.HandlerFunc {
 			return
 		}
 		if m.IsAuth(path, method) {
-			authToken := c.GetHeader(_BearerAuthTokenKey)
+			authToken := c.GetHeader(BearerAuthTokenKey)
 			if authToken == "" {
 				m.GinApiErrorHandler(c, errors.Error_Auth_Miss_Token)
 				c.Abort()
@@ -133,13 +133,13 @@ func (m *bearAuthMiddle) Handler() gin.HandlerFunc {
 			reqUser := u.(ReqUser)
 
 			host := getHost(c.Request)
-			if m.isMatchHost && reqUser.Host() != host {
+			if m.isMatchHost && reqUser.GetHost() != host {
 				m.GinApiErrorHandler(c, errors.Error_Auth_Host_Not_Match)
 				c.Abort()
 				return
 			}
 
-			if hasPerm := m.HasPerm(path, method, reqUser.GetPerm()); !hasPerm {
+			if hasPerm := m.HasPerm(path, method, reqUser.GetPerms()); !hasPerm {
 				m.GinApiErrorHandler(c, errors.Error_Auth_No_Perm)
 				c.Abort()
 				return

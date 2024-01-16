@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	apitool "github.com/94peter/api-toolkit"
@@ -10,7 +9,6 @@ import (
 )
 
 func main() {
-	fmt.Println("aaa")
 	serverErrorHandler := func(c *gin.Context, service string, err error) {
 		if err == nil {
 			return
@@ -41,7 +39,7 @@ func main() {
 }
 
 type testApiService struct {
-	apitool.CommonApi
+	errors.CommonApiErrorHandler
 }
 
 func (a *testApiService) GetAPIs() []*apitool.GinApiHandler {
@@ -51,5 +49,5 @@ func (a *testApiService) GetAPIs() []*apitool.GinApiHandler {
 }
 
 func (a *testApiService) testHandler(c *gin.Context) {
-	a.GinApiErrorHandler(c, errors.New(http.StatusBadGateway, "", "test error"))
+	a.GinApiErrorHandler(c, errors.New(http.StatusBadGateway, "test error"))
 }

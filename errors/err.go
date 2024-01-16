@@ -16,13 +16,11 @@ type GinServerErrorHandler func(c *gin.Context, service string, err error)
 
 type ApiError interface {
 	GetStatus() int
-	GetKey() string
 	error
 }
 
 type myApiError struct {
 	statusCode int
-	key        string
 	error
 }
 
@@ -30,20 +28,16 @@ func (e myApiError) GetStatus() int {
 	return e.statusCode
 }
 
-func (e myApiError) GetKey() string {
-	return e.key
-}
-
 func (e myApiError) String() string {
 	return fmt.Sprintf("%v: %v", e.statusCode, e.error)
 }
 
-func New(status int, key string, msg string) ApiError {
+func New(status int, msg string) ApiError {
 	return myApiError{statusCode: status, error: errors.New(msg)}
 }
 
-func PkgError(status int, key string, err error) ApiError {
-	return myApiError{statusCode: status, error: err, key: key}
+func PkgError(status int, err error) ApiError {
+	return myApiError{statusCode: status, error: err}
 }
 
 type CommonApiErrorHandler struct {

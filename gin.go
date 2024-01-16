@@ -7,6 +7,8 @@ import (
 	"github.com/94peter/api-toolkit/errors"
 	"github.com/94peter/api-toolkit/mid"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type GinApiHandler struct {
@@ -28,6 +30,7 @@ type GinApiServer interface {
 	SetServerErrorHandler(errors.GinServerErrorHandler) GinApiServer
 	SetAuth(authmid auth.GinAuthMidInter) GinApiServer
 	SetTrustedProxies([]string) GinApiServer
+	SetPromhttp(c ...prometheus.Collector) GinApiServer
 	Static(relativePath, root string) GinApiServer
 	Run(port int) error
 	errorHandler(c *gin.Context, err error)
@@ -38,6 +41,7 @@ type ginApiServ struct {
 	service      string
 	authMid      auth.GinAuthMidInter
 	myErrHandler errors.GinServerErrorHandler
+	apiMids      []gin.HandlerFunc
 }
 
 func (serv *ginApiServ) SetServerErrorHandler(handler errors.GinServerErrorHandler) GinApiServer {
@@ -62,7 +66,8 @@ func (serv *ginApiServ) SetAuth(authMid auth.GinAuthMidInter) GinApiServer {
 func (serv *ginApiServ) Middles(mids ...mid.GinMiddle) GinApiServer {
 	for _, m := range mids {
 		m.SetApiErrorHandler(serv.errorHandler)
-		serv.Engine.Use(m.Handler())
+		serv.apiMids = append(serv.apiMids, m.Handler())
+		//serv.Engine.Use(m.Handler())
 	}
 	return serv
 }
@@ -76,13 +81,13 @@ func (serv *ginApiServ) AddAPIs(apis ...GinAPI) GinApiServer {
 			}
 			switch h.Method {
 			case "GET":
-				serv.Engine.GET(h.Path, h.Handler)
+				serv.Engine.GET(h.Path, append(serv.apiMids, h.Handler)...)
 			case "POST":
-				serv.Engine.POST(h.Path, h.Handler)
+				serv.Engine.POST(h.Path, append(serv.apiMids, h.Handler)...)
 			case "PUT":
-				serv.Engine.PUT(h.Path, h.Handler)
+				serv.Engine.PUT(h.Path, append(serv.apiMids, h.Handler)...)
 			case "DELETE":
-				serv.Engine.DELETE(h.Path, h.Handler)
+				serv.Engine.DELETE(h.Path, append(serv.apiMids, h.Handler)...)
 			}
 		}
 	}
@@ -108,4 +113,13 @@ func NewGinApiServer(mode string, service string) GinApiServer {
 		Engine:  gin.New(),
 		service: service,
 	}
+}
+
+func (serv *ginApiServ) SetPromhttp(c ...prometheus.Collector) GinApiServer {
+	prometheus.MustRegister(c...)
+	serv.Engine.GET("/metrics", promGinHandler).Use()
+	return serv
+}
+func promGinHandler(c *gin.Context) {
+	promhttp.Handler().ServeHTTP(c.Writer, c.Request)
 }

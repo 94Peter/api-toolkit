@@ -52,31 +52,11 @@ func (am *mockAuthMiddle) Handler() gin.HandlerFunc {
 }
 
 func NewReqUser(host string, uid string, account string, name string, roles []string) ReqUser {
-	return &mockUser{
+	return &reqUserImpl{
 		host:    host,
-		UID:     uid,
-		Account: account,
-		Name:    name,
-		Roles:   roles,
+		uid:     uid,
+		account: account,
+		name:    name,
+		roles:   roles,
 	}
-}
-
-type mockUser struct {
-	host    string
-	UID     string
-	Account string
-	Name    string
-	Roles   []string
-}
-
-func (u *mockUser) Host() string {
-	return u.host
-}
-
-func (u *mockUser) GetHost() string {
-	return u.host
-}
-
-func (u *mockUser) GetPerm() []string {
-	return u.Roles
 }

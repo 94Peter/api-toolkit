@@ -25,6 +25,13 @@ const (
 	_MOCK_HEADER_KEY_ROLES   = "Mock_User_Roles"
 )
 
+func (am *mockAuthMiddle) IsAuth(path string, method string) bool {
+	return true
+}
+func (am *mockAuthMiddle) HasPerm(path, method string, perm []string) bool {
+	return true
+}
+
 func (am *mockAuthMiddle) Handler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := c.GetHeader(_MOCK_HEADER_KEY_UID)

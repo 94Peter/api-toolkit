@@ -1,8 +1,11 @@
 package apitool
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"sync"
+	"time"
 )
 
 func AutoGinApiServer(cfg *Config) (*http.Server, error) {
@@ -34,4 +37,35 @@ func AutoGinApiServer(cfg *Config) (*http.Server, error) {
 			cfg.ApiPort, authMode)
 	}
 	return server.GetServer(cfg.ApiPort), nil
+}
+
+func AutoGinApiRun(ctx context.Context, cfg *Config) error {
+	var apiWait sync.WaitGroup
+	server, err := AutoGinApiServer(cfg)
+	if err != nil {
+		return err
+	}
+	const fiveSecods = 5 * time.Second
+	apiWait.Add(1)
+	go func(srv *http.Server) {
+
+		for {
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				cfg.Logger.Fatalf("listen: %s", err)
+				time.Sleep(fiveSecods)
+			} else if err == http.ErrServerClosed {
+				apiWait.Done()
+				return
+			}
+		}
+	}(server)
+
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), fiveSecods)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		cfg.Logger.Fatalf("Server forced to shutdown: %v", err)
+	}
+	apiWait.Wait()
+	return nil
 }

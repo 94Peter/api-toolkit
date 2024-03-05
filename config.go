@@ -173,4 +173,5 @@ func booleanFromEnv(key string) (bool, error) {
 
 type Log interface {
 	Infof(format string, a ...any)
+	Fatalf(format string, a ...any)
 }

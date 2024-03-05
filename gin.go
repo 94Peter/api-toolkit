@@ -1,6 +1,7 @@
 package apitool
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/94peter/api-toolkit/auth"
@@ -34,6 +35,7 @@ type GinApiServer interface {
 	Static(relativePath, root string) GinApiServer
 	Run(port int) error
 	errorHandler(c *gin.Context, err error)
+	GetServer(port int) *http.Server
 }
 
 type ginApiServ struct {
@@ -105,6 +107,13 @@ func (serv *ginApiServ) SetTrustedProxies(proxies []string) GinApiServer {
 
 func (serv *ginApiServ) Run(port int) error {
 	return serv.Engine.Run(":" + strconv.Itoa(port))
+}
+
+func (serv *ginApiServ) GetServer(port int) *http.Server {
+	return &http.Server{
+		Addr:    ":" + strconv.Itoa(port),
+		Handler: serv.Engine,
+	}
 }
 
 func NewGinApiServer(mode string, service string) GinApiServer {

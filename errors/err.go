@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -49,9 +50,9 @@ func (api *CommonApiErrorHandler) SetApiErrorHandler(handler GinApiErrorHandler)
 }
 
 var (
-	Error_Auth_Path_NotFound  = errors.New("auth path not found")
-	Error_Auth_Miss_Token     = errors.New("miss token")
-	Error_Auth_Invalid_Token  = errors.New("invalid token")
-	Error_Auth_Host_Not_Match = errors.New("host not match")
-	Error_Auth_No_Perm        = errors.New("no permission")
+	Error_Auth_Path_NotFound  = New(http.StatusNotFound, "auth path not found")
+	Error_Auth_Miss_Token     = New(http.StatusUnauthorized, "miss token")
+	Error_Auth_Invalid_Token  = New(http.StatusUnauthorized, "invalid token")
+	Error_Auth_Host_Not_Match = New(http.StatusUnauthorized, "host not match")
+	Error_Auth_No_Perm        = New(http.StatusUnauthorized, "no permission")
 )

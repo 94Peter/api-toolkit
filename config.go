@@ -35,12 +35,13 @@ type Config struct {
 	TrustedProxies []string
 	Debug          bool // autopaho and paho debug output requested
 
-	proms        []prometheus.Collector
-	authMid      auth.GinAuthMidInter
-	middles      []mid.GinMiddle
-	apis         []GinAPI
-	errorHandler errors.GinServerErrorHandler
-	Logger       Log
+	proms          []prometheus.Collector
+	authMid        auth.GinAuthMidInter
+	preAuthMiddles []mid.GinMiddle
+	middles        []mid.GinMiddle
+	apis           []GinAPI
+	errorHandler   errors.GinServerErrorHandler
+	Logger         Log
 }
 
 func (cfg *Config) SetServerErrorHandler(handler errors.GinServerErrorHandler) {
@@ -49,6 +50,10 @@ func (cfg *Config) SetServerErrorHandler(handler errors.GinServerErrorHandler) {
 
 func (cfg *Config) SetAuth(authmid auth.GinAuthMidInter) {
 	cfg.authMid = authmid
+}
+
+func (cfg *Config) SetPreAuthMiddles(mids ...mid.GinMiddle) {
+	cfg.preAuthMiddles = mids
 }
 
 func (cfg *Config) SetMiddles(mids ...mid.GinMiddle) {
@@ -60,12 +65,26 @@ func (cfg *Config) SetAPIs(apis ...GinAPI) {
 }
 
 func (cfg *Config) getMiddles() []mid.GinMiddle {
+	count := 0
+	var middles []mid.GinMiddle
 	if cfg.Debug {
-		return append([]mid.GinMiddle{mid.NewGinDebugMid(), cfg.authMid},
-			cfg.middles...)
+		middles = make([]mid.GinMiddle, len(cfg.preAuthMiddles)+len(cfg.middles)+2)
+		middles[0] = mid.NewGinDebugMid()
+		count = 1
+	} else {
+		middles = make([]mid.GinMiddle, len(cfg.preAuthMiddles)+len(cfg.middles)+1)
 	}
-	return append([]mid.GinMiddle{cfg.authMid},
-		cfg.middles...)
+	for i := 0; i < len(cfg.preAuthMiddles); i++ {
+		middles[count] = cfg.preAuthMiddles[i]
+		count++
+	}
+	middles[count] = cfg.authMid
+	count++
+	for i := 0; i < len(cfg.middles); i++ {
+		middles[count] = cfg.middles[i]
+		count++
+	}
+	return middles
 }
 
 func (cfg *Config) AddProms(c ...prometheus.Collector) {

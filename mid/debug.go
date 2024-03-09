@@ -43,7 +43,7 @@ func (m *debugMiddle) Handler() gin.HandlerFunc {
 		c.Writer = blw
 		start := time.Now()
 		c.Next()
-		delta := time.Now().Sub(start)
+		delta := time.Since(start)
 		if delta.Seconds() > 3 {
 			fmt.Println("!!!! too slow !!!")
 		}

@@ -13,14 +13,13 @@ func AutoGinApiServer(cfg *Config) (*http.Server, error) {
 		return nil, errors.New("missing error handler")
 	}
 
-	if cfg.authMid == nil {
-		return nil, errors.New("missing auth middleware")
-	}
-
 	server := NewGinApiServer(cfg.GinMode, cfg.Service).
-		SetServerErrorHandler(cfg.errorHandler).
-		SetAuth(cfg.authMid).
-		Middles(cfg.getMiddles()...).
+		SetServerErrorHandler(cfg.errorHandler)
+
+	if cfg.authMid != nil {
+		server = server.SetAuth(cfg.authMid)
+	}
+	server = server.Middles(cfg.getMiddles()...).
 		AddAPIs(cfg.apis...).
 		SetTrustedProxies(cfg.TrustedProxies)
 

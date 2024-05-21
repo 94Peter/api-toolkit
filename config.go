@@ -67,19 +67,25 @@ func (cfg *Config) SetAPIs(apis ...GinAPI) {
 func (cfg *Config) getMiddles() []mid.GinMiddle {
 	count := 0
 	var middles []mid.GinMiddle
-	if cfg.Debug {
+	hasAuth := cfg.authMid != nil
+	if cfg.Debug && hasAuth {
 		middles = make([]mid.GinMiddle, len(cfg.preAuthMiddles)+len(cfg.middles)+2)
 		middles[0] = mid.NewGinDebugMid()
 		count = 1
-	} else {
+	} else if hasAuth {
 		middles = make([]mid.GinMiddle, len(cfg.preAuthMiddles)+len(cfg.middles)+1)
+	} else {
+		middles = make([]mid.GinMiddle, len(cfg.preAuthMiddles)+len(cfg.middles))
 	}
 	for i := 0; i < len(cfg.preAuthMiddles); i++ {
 		middles[count] = cfg.preAuthMiddles[i]
 		count++
 	}
-	middles[count] = cfg.authMid
-	count++
+	if hasAuth {
+		middles[count] = cfg.authMid
+		count++
+	}
+
 	for i := 0; i < len(cfg.middles); i++ {
 		middles[count] = cfg.middles[i]
 		count++

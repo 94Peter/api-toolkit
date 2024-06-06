@@ -52,18 +52,19 @@ func (am *mockAuthMiddle) Handler() gin.HandlerFunc {
 		}
 		c.Set(
 			_KEY_USER_INFO,
-			NewReqUser(getHost(c.Request), userID, userAcc, userName, roles),
+			NewReqUser(getHost(c.Request), userID, userAcc, userName, roles, "access"),
 		)
 		c.Next()
 	}
 }
 
-func NewReqUser(host string, uid string, account string, name string, roles []string) ReqUser {
+func NewReqUser(host string, uid string, account string, name string, roles []string, usage string) ReqUser {
 	return &reqUserImpl{
 		host:    host,
 		uid:     uid,
 		account: account,
 		name:    name,
 		roles:   roles,
+		usage:   usage,
 	}
 }

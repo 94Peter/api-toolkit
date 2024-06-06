@@ -8,6 +8,7 @@ type ReqUser interface {
 	GetId() string
 	GetAccount() string
 	GetName() string
+	GetUsage() string
 }
 
 type reqUserImpl struct {
@@ -16,6 +17,7 @@ type reqUserImpl struct {
 	account string
 	name    string
 	roles   []string
+	usage   string
 }
 
 func (u *reqUserImpl) GetHost() string {
@@ -36,4 +38,8 @@ func (u *reqUserImpl) GetAccount() string {
 
 func (u *reqUserImpl) GetName() string {
 	return u.name
+}
+
+func (u *reqUserImpl) GetUsage() string {
+	return u.usage
 }

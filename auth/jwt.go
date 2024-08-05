@@ -49,6 +49,21 @@ type JwtConf struct {
 	privateKey *rsa.PrivateKey
 }
 
+func (j *JwtConf) IsRsaKeysExist() bool {
+	// check privateKeyFile is exist
+	_, err := os.Stat(j.PrivateKeyFile)
+	if err != nil {
+		return false
+	}
+	// check publicKeyFile is exist
+	_, err = os.Stat(j.PublicKeyFile)
+	return err == nil
+}
+
+func (j *JwtConf) GenerateRsaKeys(bitsize int) error {
+	return GenerateRsaKeys(bitsize, j.PrivateKeyFile, j.PublicKeyFile)
+}
+
 func (j *JwtConf) getHeader() map[string]interface{} {
 	if j.myHeader != nil {
 		delete(j.myHeader, "usa")

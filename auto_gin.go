@@ -16,6 +16,9 @@ func AutoGinApiServer(cfg *Config) (*http.Server, error) {
 	server := NewGinApiServer(cfg.GinMode, cfg.Service).
 		SetServerErrorHandler(cfg.errorHandler)
 
+	if cfg.store != nil {
+		server = server.SetSession(cfg.SessionHeaderName, cfg.store, cfg.SessionExpired)
+	}
 	if cfg.authMid != nil {
 		server = server.SetAuth(cfg.authMid)
 	}
@@ -26,7 +29,6 @@ func AutoGinApiServer(cfg *Config) (*http.Server, error) {
 	if len(cfg.proms) > 0 {
 		server = server.SetPromhttp(cfg.proms...)
 	}
-
 	if cfg.Logger != nil {
 		authMode := "release"
 		if cfg.IsMockAuth {

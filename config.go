@@ -5,10 +5,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/94peter/api-toolkit/auth"
 	"github.com/94peter/api-toolkit/errors"
 	"github.com/94peter/api-toolkit/mid"
+	"github.com/go-session/session/v3"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -24,16 +26,20 @@ const (
 	envIsDebug    = "API_DEBUG"
 
 	envTrustedProxies = "TRUSTED_PROXIES"
+	envSessionHeader  = "SESSION_HEADER_NAME"
+	envSessionExpired = "SESSION_EXPIRED"
 )
 
 // config holds the configuration
 type Config struct {
-	Service        string
-	GinMode        string
-	IsMockAuth     bool
-	ApiPort        int
-	TrustedProxies []string
-	Debug          bool // autopaho and paho debug output requested
+	Service           string
+	GinMode           string
+	IsMockAuth        bool
+	ApiPort           int
+	TrustedProxies    []string
+	Debug             bool // autopaho and paho debug output requested
+	SessionHeaderName string
+	SessionExpired    time.Duration
 
 	proms          []prometheus.Collector
 	authMid        auth.GinAuthMidInter
@@ -41,7 +47,9 @@ type Config struct {
 	middles        []mid.GinMiddle
 	apis           []GinAPI
 	errorHandler   errors.GinServerErrorHandler
-	Logger         Log
+	store          session.ManagerStore
+
+	Logger Log
 }
 
 func (cfg *Config) SetServerErrorHandler(handler errors.GinServerErrorHandler) {
@@ -62,6 +70,10 @@ func (cfg *Config) SetMiddles(mids ...mid.GinMiddle) {
 
 func (cfg *Config) SetAPIs(apis ...GinAPI) {
 	cfg.apis = apis
+}
+
+func (cfg *Config) SetSessionStore(store session.ManagerStore) {
+	cfg.store = store
 }
 
 func (cfg *Config) getMiddles() []mid.GinMiddle {
@@ -142,6 +154,15 @@ func GetConfigFromEnv() (*Config, error) {
 	}
 	cfg.TrustedProxies = strings.Split(proxies, ",")
 
+	cfg.SessionHeaderName, err = stringFromEnv(envSessionHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.SessionExpired, err = durationFromEnv(envSessionExpired)
+	if err != nil {
+		return nil, err
+	}
 	return &cfg, nil
 }
 
@@ -168,17 +189,17 @@ func intFromEnv(key string) (int, error) {
 }
 
 // milliSecondsFromEnv - Retrieves milliseconds (as time.Duration) from the environment (must be present and valid)
-// func milliSecondsFromEnv(key string) (time.Duration, error) {
-// 	s := os.Getenv(key)
-// 	if len(s) == 0 {
-// 		return 0, fmt.Errorf("environmental variable %s must not be blank", key)
-// 	}
-// 	i, err := strconv.Atoi(s)
-// 	if err != nil {
-// 		return 0, fmt.Errorf("environmental variable %s must be an integer", key)
-// 	}
-// 	return time.Duration(i) * time.Millisecond, nil
-// }
+func durationFromEnv(key string) (time.Duration, error) {
+	s := os.Getenv(key)
+	if len(s) == 0 {
+		return 0, fmt.Errorf("environmental variable %s must not be blank", key)
+	}
+	i, err := time.ParseDuration(s)
+	if err != nil {
+		return 0, fmt.Errorf("environmental variable %s parse error %s", key, err)
+	}
+	return i, nil
+}
 
 // booleanFromEnv - Retrieves boolean from the environment (must be present and valid)
 func booleanFromEnv(key string) (bool, error) {

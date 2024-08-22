@@ -3,11 +3,14 @@ package apitool
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/94peter/api-toolkit/auth"
 	"github.com/94peter/api-toolkit/errors"
 	"github.com/94peter/api-toolkit/mid"
+	ginsession "github.com/94peter/gin-session"
 	"github.com/gin-gonic/gin"
+	"github.com/go-session/session/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -32,6 +35,7 @@ type GinApiServer interface {
 	SetAuth(authmid auth.GinAuthMidInter) GinApiServer
 	SetTrustedProxies([]string) GinApiServer
 	SetPromhttp(c ...prometheus.Collector) GinApiServer
+	SetSession(sessionHeaderName string, store session.ManagerStore, expired time.Duration) GinApiServer
 	Static(relativePath, root string) GinApiServer
 	Run(port int) error
 	errorHandler(c *gin.Context, err error)
@@ -44,6 +48,16 @@ type ginApiServ struct {
 	authMid      auth.GinAuthMidInter
 	myErrHandler errors.GinServerErrorHandler
 	apiMids      []gin.HandlerFunc
+}
+
+func (serv *ginApiServ) SetSession(sessionHeaderName string, store session.ManagerStore, expired time.Duration) GinApiServer {
+	serv.Use(ginsession.New(
+		session.SetStore(store),
+		session.SetEnableSIDInHTTPHeader(true),
+		session.SetSessionNameInHTTPHeader(sessionHeaderName),
+		session.SetExpired(int64(expired.Seconds())),
+	))
+	return serv
 }
 
 func (serv *ginApiServ) SetServerErrorHandler(handler errors.GinServerErrorHandler) GinApiServer {
@@ -106,6 +120,7 @@ func (serv *ginApiServ) SetTrustedProxies(proxies []string) GinApiServer {
 }
 
 func (serv *ginApiServ) Run(port int) error {
+
 	return serv.Engine.Run(":" + strconv.Itoa(port))
 }
 

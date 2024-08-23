@@ -17,6 +17,9 @@ func AutoGinApiServer(cfg *Config) (*http.Server, error) {
 		SetServerErrorHandler(cfg.errorHandler)
 
 	if cfg.store != nil {
+		if cfg.SessionHeaderName == "" {
+			return nil, errors.New("missing env SESSION_HEADER_NAME")
+		}
 		server = server.SetSession(cfg.SessionHeaderName, cfg.store, cfg.SessionExpired)
 	}
 	if cfg.authMid != nil {

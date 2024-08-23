@@ -20,7 +20,7 @@ import (
 
 type JwtToken interface {
 	GetToken(host string, data map[string]interface{}, exp uint8) (*string, error)
-	GetTokenWithRefresh(host string, data map[string]interface{}, exp uint8) (*token, error)
+	GetTokenWithRefresh(host string, data map[string]interface{}, exp uint8) (*Token, error)
 	ParseToken(tokenStr string) (*jwt.Token, error)
 	ParseTokenUnValidate(tokenStr string) (*jwt.Token, error)
 	// 對特定資源存取金鑰
@@ -198,7 +198,7 @@ func (j *JwtConf) GetToken(host string, data map[string]interface{}, exp uint8) 
 	return &ss, nil
 }
 
-func (j *JwtConf) GetTokenWithRefresh(host string, data map[string]interface{}, exp uint8) (*token, error) {
+func (j *JwtConf) GetTokenWithRefresh(host string, data map[string]interface{}, exp uint8) (*Token, error) {
 	if j.RefreshSecret == "" {
 		return nil, errors.New("refresh secret not set")
 	}
@@ -212,7 +212,7 @@ func (j *JwtConf) GetTokenWithRefresh(host string, data map[string]interface{}, 
 	if err != nil {
 		return nil, err
 	}
-	return &token{AccessToken: *t, RefreshToken: refreshToken}, nil
+	return &Token{AccessToken: *t, RefreshToken: refreshToken}, nil
 }
 
 func (j *JwtConf) RefreshAccessToken(refreshToken string) (*string, error) {
@@ -253,7 +253,7 @@ func (j *JwtConf) GetAccessToken(host string, source string, id interface{}, db 
 	return &ss, nil
 }
 
-type token struct {
+type Token struct {
 	AccessToken  string
 	RefreshToken string
 }

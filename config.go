@@ -158,8 +158,9 @@ func GetConfigFromEnv() (*Config, error) {
 
 	cfg.SessionExpired, err = durationFromEnv(envSessionExpired)
 	if err != nil {
-		return nil, err
+		cfg.SessionExpired = -1
 	}
+
 	return &cfg, nil
 }
 

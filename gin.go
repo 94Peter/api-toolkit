@@ -115,7 +115,10 @@ func (serv *ginApiServ) SetTrustedProxies(proxies []string) GinApiServer {
 		return serv
 	}
 	serv.Engine.ForwardedByClientIP = true
-	serv.Engine.SetTrustedProxies(proxies)
+	err := serv.Engine.SetTrustedProxies(proxies)
+	if err != nil {
+		panic(err)
+	}
 	return serv
 }
 

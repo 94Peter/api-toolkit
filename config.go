@@ -152,7 +152,11 @@ func GetConfigFromEnv() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg.TrustedProxies = strings.Split(proxies, ",")
+	if proxies == "*" {
+		cfg.TrustedProxies = nil
+	} else {
+		cfg.TrustedProxies = strings.Split(proxies, ",")
+	}
 
 	cfg.SessionHeaderName, _ = stringFromEnv(envSessionHeader)
 

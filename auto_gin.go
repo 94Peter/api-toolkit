@@ -97,11 +97,22 @@ func autoGinApiServerWithBindUser[T mid.BindUser](cfg *ConfigWithBindUser[T]) (*
 		server = server.SetSession(cfg.SessionHeaderName, cfg.store, cfg.SessionExpired)
 	}
 
-	middles := append([]mid.GinMiddle{
-		mid.NewGinBindUserMid(
-			mid.BindUserMidWithCtxKey[T](cfg.CtxUserKey),
-			mid.BindUserMidWithBindObject(cfg.bindUser),
-		)}, cfg.getMiddles()...)
+	var middles []mid.GinMiddle
+	if cfg.IsMockAuth {
+		middles = append([]mid.GinMiddle{
+			mid.NewGinBindUserJwtMid(
+				mid.BindUserJwtMidWithBindObject(cfg.bindUser),
+				mid.BindUserJwtMidWithCtxKey[T](cfg.CtxUserKey),
+				mid.BindUserJwtMidWithMock[T](),
+				mid.BindUserJwtMidWithSecret[T](cfg.MockAuthSecret),
+			)}, cfg.getMiddles()...)
+	} else {
+		middles = append([]mid.GinMiddle{
+			mid.NewGinBindUserMid(
+				mid.BindUserMidWithCtxKey[T](cfg.CtxUserKey),
+				mid.BindUserMidWithBindObject(cfg.bindUser),
+			)}, cfg.getMiddles()...)
+	}
 
 	server = server.Middles(
 		middles...).

@@ -44,7 +44,11 @@ type bindUserMiddle[T BindUser] struct {
 }
 
 func (m *bindUserMiddle[T]) newObj() BindUser {
-	return reflect.New(reflect.TypeOf(m.bindType)).Interface().(BindUser)
+	if reflect.TypeOf(m.bindType).Kind() == reflect.Ptr {
+		return reflect.New(reflect.TypeOf(m.bindType).Elem()).Interface().(BindUser)
+	} else {
+		return reflect.New(reflect.TypeOf(m.bindType)).Interface().(BindUser)
+	}
 }
 
 func (m *bindUserMiddle[T]) Handler() gin.HandlerFunc {
@@ -55,10 +59,12 @@ func (m *bindUserMiddle[T]) Handler() gin.HandlerFunc {
 			return
 		}
 		if !newObj.IsEmpty() {
+			var obj T
+			if reflect.TypeOf(obj).Kind() == reflect.Struct {
+				newObj = reflect.ValueOf(newObj).Elem().Interface().(BindUser)
+			}
 			c.Set(m.ctxKey, newObj)
-			return
 		}
-
 		c.Next()
 	}
 }

@@ -20,10 +20,11 @@ import (
 const (
 	envApiPort = "API_PORT"
 
-	envGinMode    = "GIN_MODE"
-	envService    = "SERVICE"
-	envIsMockAuth = "MOCK_AUTH"
-	envIsDebug    = "API_DEBUG"
+	envGinMode        = "GIN_MODE"
+	envService        = "SERVICE"
+	envIsMockAuth     = "MOCK_AUTH"
+	envMockAuthSecret = "MOCK_AUTH_SECRET"
+	envIsDebug        = "API_DEBUG"
 
 	envTrustedProxies = "TRUSTED_PROXIES"
 	envSessionHeader  = "SESSION_HEADER_NAME"
@@ -35,6 +36,7 @@ type Config struct {
 	Service           string
 	GinMode           string
 	IsMockAuth        bool
+	MockAuthSecret    string
 	ApiPort           int
 	TrustedProxies    []string
 	Debug             bool // autopaho and paho debug output requested
@@ -140,7 +142,10 @@ func GetConfigFromEnv() (*Config, error) {
 	}
 
 	if cfg.IsMockAuth {
-		cfg.SetAuth(auth.NewMockAuthMid())
+		cfg.MockAuthSecret, err = stringFromEnv(envMockAuthSecret)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	cfg.Debug, err = booleanFromEnv(envIsDebug)

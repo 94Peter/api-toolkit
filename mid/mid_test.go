@@ -1,10 +1,12 @@
 package mid
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,17 +17,25 @@ type testObj struct {
 
 func (t testObj) IsEmpty() bool { return t.Name == "" }
 
+func (t testObj) BindClaims(claims jwt.Claims) {}
+
 func TestNewGinBindUserMidWithPointer(t *testing.T) {
 
 	tests := []struct {
-		name     string
-		bindObj  *testObj
-		hasPanic bool
+		name       string
+		bindObj    *testObj
+		hasPanic   bool
+		reqHeader  map[string][]string
+		statusCode int
 	}{
 		{
 			name:     "pointer bind object",
 			bindObj:  &testObj{Name: "testaaaa"},
 			hasPanic: false,
+			reqHeader: map[string][]string{
+				"X-User-Name": {"test"},
+			},
+			statusCode: http.StatusOK,
 		},
 		{
 			name:     "nil bind object",
@@ -33,6 +43,7 @@ func TestNewGinBindUserMidWithPointer(t *testing.T) {
 			hasPanic: true,
 		},
 	}
+	const userCtxKey = "User"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.hasPanic {
@@ -43,7 +54,33 @@ func TestNewGinBindUserMidWithPointer(t *testing.T) {
 			}
 			mid := NewGinBindUserMid(BindUserMidWithBindObject(tt.bindObj))
 			assert.NotNil(t, mid)
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request, _ = http.NewRequest("GET", "/", nil)
 
+			c.Request.Header = tt.reqHeader
+
+			m := NewGinBindUserMid(
+				BindUserMidWithBindObject(tt.bindObj),
+				BindUserMidWithCtxKey[*testObj](userCtxKey))
+			handler := m.Handler()
+			handler(c)
+
+			if w.Code != tt.statusCode {
+				t.Errorf("expected status code %d, got %d", tt.statusCode, w.Code)
+			}
+
+			if _, ok := tt.reqHeader["X-User-Name"]; ok {
+				userInter, ok := c.Get(userCtxKey)
+				user := userInter.(*testObj)
+				assert.True(t, ok)
+				assert.Equal(t, tt.reqHeader["X-User-Name"][0], user.Name)
+				return
+			} else {
+				userInter, ok := c.Get(userCtxKey)
+				assert.False(t, ok)
+				assert.Nil(t, userInter)
+			}
 		})
 	}
 }
@@ -92,7 +129,7 @@ func TestBindUserMiddleHandlerWithNonePointer(t *testing.T) {
 
 			if _, ok := tt.reqHeader["X-User-Name"]; ok {
 				userInter, ok := c.Get(userCtxKey)
-				user := userInter.(*testObj)
+				user := userInter.(testObj)
 				assert.True(t, ok)
 				assert.Equal(t, tt.reqHeader["X-User-Name"][0], user.Name)
 				return
@@ -103,4 +140,17 @@ func TestBindUserMiddleHandlerWithNonePointer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_ReflectMindMap(t *testing.T) {
+	type A struct {
+		Name string `claims:"id"`
+	}
+	var emptyA A
+	claims := map[string]any{
+		"id": "Jack",
+	}
+	bindClaims(&emptyA, claims)
+	fmt.Println(emptyA.Name) // print Jack
+	assert.Equal(t, "Jack", emptyA.Name)
 }

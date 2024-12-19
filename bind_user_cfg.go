@@ -51,19 +51,23 @@ func (h *GinReqUserHandler[T]) SetReqUserHandler(ctxUserKey string) {
 	h.ctxUserKey = ctxUserKey
 }
 
-func (h *GinReqUserHandler[T]) GetReqUser(c *gin.Context) *T {
+func (h *GinReqUserHandler[T]) GetReqUser(c *gin.Context) T {
+	var emptyUser T
 	if h == nil {
-		return nil
+		return emptyUser
 	}
 	user, ok := c.Get(h.ctxUserKey)
 	if !ok {
-		return nil
+		return emptyUser
 	}
-	return user.(*T)
+	if realUser, ok := user.(T); ok {
+		return realUser
+	}
+	return emptyUser
 }
 
 type GinAPIWithBindUser[T mid.BindUser] interface {
 	GinAPI
 	SetReqUserHandler(ctxUserKey string)
-	GetReqUser(c *gin.Context) *T
+	GetReqUser(c *gin.Context) T
 }
